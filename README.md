@@ -8,7 +8,7 @@ Smart contracts suite of Squared, an automated market maker that squares the ret
 
 
 ```bash
-forge install robertleifke/squared
+forge install numocash/squared
 ```
 
 ## Local development
