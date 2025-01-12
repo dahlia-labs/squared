@@ -1,14 +1,14 @@
-# ⚡ Numo Squared
+# ⚡ Squared
 
-### Access squared leverage on any token.
+### Leverage on any ERC-20.
 
-Smart contracts suite of Numo Squared, an automated market maker that replicates "Squeeth" on the EVM -- an option-like derivative that squares returns. 
+Smart contracts suite of Squared, an automated market maker that squares the returns of any ERC-20.
 
 ## Installation
 
 
 ```bash
-forge install numoen/pmmp
+forge install robertleifke/squared
 ```
 
 ## Local development
@@ -19,15 +19,14 @@ This project uses [Foundry](https://github.com/foundry-rs/foundry) as the develo
 
 ```bash
 forge install
+
+@openzeppelin/contracts-upgrade
+@transmissions11/solmate
 ```
 
-```bash
-npm install @openzeppelin/contracts
-```
+#### CREATE2
 
-```bash
-npm install create3-factory
-```
+The `factory.sol` deploys `squared.sol` to a predetermined address using `.create2deploy()`
 
 ### Compilation
 
