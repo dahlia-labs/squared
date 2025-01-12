@@ -5,7 +5,7 @@ import { ERC20 } from "./ERC20.sol";
 import { JumpRate } from "./JumpRate.sol";
 import { Pair } from "./Pair.sol";
 
-import { ILendgine } from "./interfaces/ILendgine.sol";
+import { ISquared } from "./interfaces/ISquared.sol";
 import { IMintCallback } from "./interfaces/callback/IMintCallback.sol";
 
 import { Balance } from "../libraries/Balance.sol";
@@ -14,7 +14,7 @@ import { Position } from "./libraries/Position.sol";
 import { SafeTransferLib } from "../libraries/SafeTransferLib.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 
-contract Lendgine is ERC20, JumpRate, Pair, ILendgine {
+contract Squared is ERC20, JumpRate, Pair, ISquared {
   using Position for mapping(address => Position.Info);
   using Position for Position.Info;
 
@@ -49,25 +49,25 @@ contract Lendgine is ERC20, JumpRate, Pair, ILendgine {
   error InsufficientPositionError();
 
   /*//////////////////////////////////////////////////////////////
-                          LENDGINE STORAGE
+                          Squared STORAGE
     //////////////////////////////////////////////////////////////*/
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   mapping(address => Position.Info) public override positions;
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   uint256 public override totalPositionSize;
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   uint256 public override totalLiquidityBorrowed;
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   uint256 public override rewardPerPositionStored;
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   uint256 public override lastUpdate;
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   function mint(
     address to,
     uint256 collateral,
@@ -101,7 +101,7 @@ contract Lendgine is ERC20, JumpRate, Pair, ILendgine {
     emit Mint(msg.sender, collateral, shares, liquidity, to);
   }
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   function burn(address to, bytes calldata data) external override nonReentrant returns (uint256 collateral) {
     _accrueInterest();
 
@@ -119,7 +119,7 @@ contract Lendgine is ERC20, JumpRate, Pair, ILendgine {
     emit Burn(msg.sender, collateral, shares, liquidity, to);
   }
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   function deposit(
     address to,
     uint256 liquidity,
@@ -148,7 +148,7 @@ contract Lendgine is ERC20, JumpRate, Pair, ILendgine {
     emit Deposit(msg.sender, size, liquidity, to);
   }
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   function withdraw(
     address to,
     uint256 size
@@ -179,18 +179,18 @@ contract Lendgine is ERC20, JumpRate, Pair, ILendgine {
     emit Withdraw(msg.sender, size, liquidity, to);
   }
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   function accrueInterest() external override nonReentrant {
     _accrueInterest();
   }
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   function accruePositionInterest() external override nonReentrant {
     _accrueInterest();
     _accruePositionInterest(msg.sender);
   }
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   function collect(address to, uint256 collateralRequested) external override nonReentrant returns (uint256 collateral) {
     Position.Info storage position = positions[msg.sender]; // SLOAD
     uint256 tokensOwed = position.tokensOwed;
@@ -209,23 +209,23 @@ contract Lendgine is ERC20, JumpRate, Pair, ILendgine {
                             ACCOUNTING LOGIC
     //////////////////////////////////////////////////////////////*/
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   function convertLiquidityToShare(uint256 liquidity) public view override returns (uint256) {
     uint256 _totalLiquidityBorrowed = totalLiquidityBorrowed; // SLOAD
     return _totalLiquidityBorrowed == 0 ? liquidity : FullMath.mulDiv(liquidity, totalSupply, _totalLiquidityBorrowed);
   }
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   function convertShareToLiquidity(uint256 shares) public view override returns (uint256) {
     return FullMath.mulDiv(totalLiquidityBorrowed, shares, totalSupply);
   }
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   function convertCollateralToLiquidity(uint256 collateral) public view override returns (uint256) {
     return FullMath.mulDiv(collateral * token1Scale, 1e18, 2 * upperBound);
   }
 
-  /// @inheritdoc ILendgine
+  /// @inheritdoc ISquared
   function convertLiquidityToCollateral(uint256 liquidity) public view override returns (uint256) {
     return FullMath.mulDiv(liquidity, 2 * upperBound, 1e18) / token1Scale;
   }
@@ -234,7 +234,7 @@ contract Lendgine is ERC20, JumpRate, Pair, ILendgine {
                          INTERNAL INTEREST LOGIC
     //////////////////////////////////////////////////////////////*/
 
-  /// @notice Helper function for accruing lendgine interest
+  /// @notice Helper function for accruing Squared interest
   function _accrueInterest() private {
     if (totalSupply == 0 || totalLiquidityBorrowed == 0) {
       lastUpdate = block.timestamp;

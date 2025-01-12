@@ -4,7 +4,7 @@ pragma solidity ^0.8.4;
 import { PositionMath } from "./PositionMath.sol";
 import { FullMath } from "../../libraries/FullMath.sol";
 
-/// @notice Library for handling Lendgine liquidity positions
+/// @notice Library for handling squared liquidity positions
 /// @author Kyle Scott and Leifke
 /// @author Modified from Uniswap (https://github.com/Uniswap/v3-core/blob/main/contracts/libraries/Position.sol)
 library Position {

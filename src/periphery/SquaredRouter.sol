@@ -6,25 +6,25 @@ import { Payment } from "./Payment.sol";
 import { SelfPermit } from "./SelfPermit.sol";
 import { SwapHelper } from "./SwapHelper.sol";
 
-import { ILendgine } from "../core/interfaces/ILendgine.sol";
+import { ISquared } from "../core/interfaces/ISquared.sol";
 import { IMintCallback } from "../core/interfaces/callback/IMintCallback.sol";
 import { IPairMintCallback } from "../core/interfaces/callback/IPairMintCallback.sol";
 
 import { FullMath } from "../libraries/FullMath.sol";
-import { LendgineAddress } from "./libraries/LendgineAddress.sol";
+import { SquaredAddress } from "./libraries/SquaredAddress.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { SafeTransferLib } from "../libraries/SafeTransferLib.sol";
 
-/// @notice Contract for automatically entering and exiting option positions
+/// @notice Contract for automatically entering and exiting Squared positions
 /// @author Kyle Scott and Robert Leifke
-contract LendgineRouter is Multicall, Payment, SelfPermit, SwapHelper, IMintCallback, IPairMintCallback {
+contract SquaredRouter is Multicall, Payment, SelfPermit, SwapHelper, IMintCallback, IPairMintCallback {
   /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
 
-  event Mint(address indexed from, address indexed lendgine, uint256 collateral, uint256 shares, address indexed to);
+  event Mint(address indexed from, address indexed squared, uint256 collateral, uint256 shares, address indexed to);
 
-  event Burn(address indexed from, address indexed lendgine, uint256 collateral, uint256 shares, address indexed to);
+  event Burn(address indexed from, address indexed squared, uint256 collateral, uint256 shares, address indexed to);
 
   /*//////////////////////////////////////////////////////////////
                                  ERRORS
@@ -96,10 +96,10 @@ contract LendgineRouter is Multicall, Payment, SelfPermit, SwapHelper, IMintCall
   {
     MintCallbackData memory decoded = abi.decode(data, (MintCallbackData));
 
-    address lendgine = LendgineAddress.computeAddress(
+    address squared = SquaredAddress.computeAddress(
       factory, decoded.token0, decoded.token1, decoded.token0Exp, decoded.token1Exp, decoded.upperBound
     );
-    if (lendgine != msg.sender) revert ValidationError();
+    if (squared != msg.sender) revert ValidationError();
 
     // swap all token0 to token1
     uint256 collateralSwap = swap(
@@ -140,11 +140,11 @@ contract LendgineRouter is Multicall, Payment, SelfPermit, SwapHelper, IMintCall
 
   /// @notice Use token1 to completely mint an option position
   function mint(MintParams calldata params) external payable checkDeadline(params.deadline) returns (uint256 shares) {
-    address lendgine = LendgineAddress.computeAddress(
+    address squared = SquaredAddress.computeAddress(
       factory, params.token0, params.token1, params.token0Exp, params.token1Exp, params.upperBound
     );
 
-    shares = ILendgine(lendgine).mint(
+    shares = ISquared(squared).mint(
       address(this),
       params.amountIn + params.amountBorrow,
       abi.encode(
@@ -163,9 +163,9 @@ contract LendgineRouter is Multicall, Payment, SelfPermit, SwapHelper, IMintCall
     );
     if (shares < params.sharesMin) revert AmountError();
 
-    SafeTransferLib.safeTransfer(lendgine, params.recipient, shares);
+    SafeTransferLib.safeTransfer(squared, params.recipient, shares);
 
-    emit Mint(msg.sender, lendgine, params.amountIn, shares, params.recipient);
+    emit Mint(msg.sender, squared, params.amountIn, shares, params.recipient);
   }
 
   /*//////////////////////////////////////////////////////////////
@@ -190,14 +190,14 @@ contract LendgineRouter is Multicall, Payment, SelfPermit, SwapHelper, IMintCall
   function pairMintCallback(uint256 liquidity, bytes calldata data) external override {
     PairMintCallbackData memory decoded = abi.decode(data, (PairMintCallbackData));
 
-    address lendgine = LendgineAddress.computeAddress(
+    address squared = SquaredAddress.computeAddress(
       factory, decoded.token0, decoded.token1, decoded.token0Exp, decoded.token1Exp, decoded.upperBound
     );
-    if (lendgine != msg.sender) revert ValidationError();
+    if (squared != msg.sender) revert ValidationError();
 
-    uint256 r0 = ILendgine(msg.sender).reserve0();
-    uint256 r1 = ILendgine(msg.sender).reserve1();
-    uint256 totalLiquidity = ILendgine(msg.sender).totalLiquidity();
+    uint256 r0 = ISquared(msg.sender).reserve0();
+    uint256 r1 = ISquared(msg.sender).reserve1();
+    uint256 totalLiquidity = ISquared(msg.sender).totalLiquidity();
 
     uint256 amount0;
     uint256 amount1;
@@ -228,7 +228,7 @@ contract LendgineRouter is Multicall, Payment, SelfPermit, SwapHelper, IMintCall
     SafeTransferLib.safeTransfer(decoded.token1, msg.sender, amount1);
 
     // determine remaining and send to recipient
-    uint256 collateralTotal = ILendgine(msg.sender).convertLiquidityToCollateral(liquidity);
+    uint256 collateralTotal = ISquared(msg.sender).convertLiquidityToCollateral(liquidity);
     uint256 collateralOut = collateralTotal - amount1 - collateralSwapped;
     if (collateralOut < decoded.collateralMin) revert AmountError();
 
@@ -255,15 +255,15 @@ contract LendgineRouter is Multicall, Payment, SelfPermit, SwapHelper, IMintCall
 
   /// @notice Take an option position and withdraw it fully into token1
   function burn(BurnParams calldata params) external payable checkDeadline(params.deadline) returns (uint256 amount) {
-    address lendgine = LendgineAddress.computeAddress(
+    address squared = SquaredAddress.computeAddress(
       factory, params.token0, params.token1, params.token0Exp, params.token1Exp, params.upperBound
     );
 
     address recipient = params.recipient == address(0) ? address(this) : params.recipient;
 
-    SafeTransferLib.safeTransferFrom(lendgine, msg.sender, lendgine, params.shares);
+    SafeTransferLib.safeTransferFrom(squared, msg.sender, squared, params.shares);
 
-    amount = ILendgine(lendgine).burn(
+    amount = ISquared(squared).burn(
       address(this),
       abi.encode(
         PairMintCallbackData({
@@ -282,6 +282,6 @@ contract LendgineRouter is Multicall, Payment, SelfPermit, SwapHelper, IMintCall
       )
     );
 
-    emit Burn(msg.sender, lendgine, amount, params.shares, recipient);
+    emit Burn(msg.sender, squared, amount, params.shares, recipient);
   }
 }

@@ -28,7 +28,7 @@
   "scripts": {
     "build": "forge build",
     "clean": "rm -rf cache out",
-    "test": "forge test --no-match-path src/core/Lendgine.sol",
+    "test": "forge test --no-match-path src/core/squared.sol",
     "lint": "forge fmt",
     "lint:ci": "forge fmt --check",
     "lint:sol": "solhint \"{src,test}/**/*.sol\"",

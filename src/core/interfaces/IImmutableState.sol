@@ -4,7 +4,7 @@ pragma solidity >=0.5.0;
 /// @notice Immutable state interface
 /// @author Kyle Scott and Robert Leifke
 interface IImmutableState {
-  /// @notice The contract that deployed the lendgine
+  /// @notice The contract that deployed the squared
   function factory() external view returns (address);
 
   /// @notice The "numeraire" or "base" token in the pair

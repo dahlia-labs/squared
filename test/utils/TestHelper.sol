@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { Factory } from "../../src/core/Factory.sol";
-import { Lendgine } from "../../src/core/Lendgine.sol";
+import { Squared } from "../../src/core/Squared.sol";
 import { Test } from "forge-std/Test.sol";
 
 import { CallbackHelper } from "./CallbackHelper.sol";
@@ -18,7 +18,7 @@ abstract contract TestHelper is Test, CallbackHelper {
   uint256 public upperBound;
 
   Factory public factory;
-  Lendgine public lendgine;
+  Squared public squared;
 
   address public cuh;
   address public dennis;
@@ -46,7 +46,7 @@ abstract contract TestHelper is Test, CallbackHelper {
     (token0, token1) = address(tokenA) < address(tokenB) ? (tokenA, tokenB) : (tokenB, tokenA);
 
     factory = new Factory();
-    lendgine = Lendgine(factory.createLendgine(address(token0), address(token1), token0Scale, token1Scale, upperBound));
+    squared = Squared(factory.createSquared(address(token0), address(token1), token0Scale, token1Scale, upperBound));
   }
 
   function _mint(address from, address to, uint256 collateral) internal returns (uint256 shares) {
@@ -57,7 +57,7 @@ abstract contract TestHelper is Test, CallbackHelper {
       token1.approve(address(this), collateral);
     }
 
-    shares = lendgine.mint(to, collateral, abi.encode(MintCallbackData({ token: address(token1), payer: from })));
+    shares = squared.mint(to, collateral, abi.encode(MintCallbackData({ token: address(token1), payer: from })));
   }
 
   function _burn(
@@ -72,15 +72,15 @@ abstract contract TestHelper is Test, CallbackHelper {
   {
     if (from != address(this)) {
       vm.startPrank(from);
-      lendgine.transfer(address(lendgine), shares);
+      squared.transfer(address(squared), shares);
       token0.approve(address(this), amount0);
       token1.approve(address(this), amount1);
       vm.stopPrank();
     } else {
-      lendgine.transfer(address(lendgine), shares);
+      squared.transfer(address(squared), shares);
     }
 
-    collateral = lendgine.burn(
+    collateral = squared.burn(
       to,
       abi.encode(
         PairMintCallbackData({
@@ -114,7 +114,7 @@ abstract contract TestHelper is Test, CallbackHelper {
       vm.stopPrank();
     }
 
-    size = lendgine.deposit(
+    size = squared.deposit(
       to,
       liquidity,
       abi.encode(
@@ -138,6 +138,6 @@ abstract contract TestHelper is Test, CallbackHelper {
     returns (uint256 amount0, uint256 amount1, uint256 liquidity)
   {
     vm.prank(from);
-    (amount0, amount1, liquidity) = lendgine.withdraw(to, size);
+    (amount0, amount1, liquidity) = squared.withdraw(to, size);
   }
 }

@@ -7,7 +7,7 @@ import { console2 } from "forge-std/console2.sol";
 
 import { Factory } from "../src/core/Factory.sol";
 import { LiquidityManager } from "../src/periphery/LiquidityManager.sol";
-import { LendgineRouter } from "../src/periphery/LendgineRouter.sol";
+import { SquaredRouter } from "../src/periphery/SquaredRouter.sol";
 import { SwapHelper } from "../src/periphery/SwapHelper.sol";
 import { ERC20 } from "../src/core/ERC20.sol";
 import { IWETH9 } from "../src/periphery/interfaces/external/IWETH9.sol";
@@ -54,20 +54,20 @@ contract SetupLocalScript is Script {
 
     // deploy core contracts
     vm.startBroadcast(pk);
-    Factory factory = new Factory{salt: keccak256("NumoFactoryTest1")}();
+    Factory factory = new Factory{salt: keccak256("FactoryTest1")}();
     LiquidityManager liquidityManager =
-      new LiquidityManager{salt: keccak256("NumoLiquidityManagerTest1")}(address(factory), weth);
-    LendgineRouter lendgineRouter = new LendgineRouter{salt: keccak256("NumoLendgineRouterTest1")}(
+      new LiquidityManager{salt: keccak256("SquaredLiquidityManagerTest1")}(address(factory), weth);
+    SquaredRouter squaredRouter = new SquaredRouter{salt: keccak256("SquaredRouterTest1")}(
       address(factory),
       uniV2Factory,
       uniV3Factory,
       weth
     );
 
-    // deploy new lendgines
-    console2.log("usdc/weth lendgine: ", factory.createLendgine(usdc, weth, 6, 18, usdcWethBound));
-    console2.log("weth/uni lendgine: ", factory.createLendgine(weth, uni, 18, 18, wethUniBound));
-    console2.log("uni/weth lendgine: ", factory.createLendgine(uni, weth, 18, 18, uniWethBound));
+    // deploy new squareds
+    console2.log("usdc/weth squared: ", factory.createSquared(usdc, weth, 6, 18, usdcWethBound));
+    console2.log("weth/uni squared: ", factory.createSquared(weth, uni, 18, 18, wethUniBound));
+    console2.log("uni/weth squared: ", factory.createSquared(uni, weth, 18, 18, uniWethBound));
 
     // mint tokens to addr
     IWETH9(weth).deposit{ value: 100 ether }();
@@ -130,10 +130,10 @@ contract SetupLocalScript is Script {
     );
 
     // borrow from market
-    ERC20(uni).approve(address(lendgineRouter), 50 * 1e18);
+    ERC20(uni).approve(address(squaredRouter), 50 * 1e18);
 
-    lendgineRouter.mint(
-      LendgineRouter.MintParams({
+    squaredRouter.mint(
+      SquaredRouter.MintParams({
         token0: weth,
         token1: uni,
         token0Exp: 18,
