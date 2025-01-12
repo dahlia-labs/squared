@@ -1,8 +1,8 @@
-# ⚡ Numo-0
+# ⚡ Numo Squared
 
 ### Access squared leverage on any token.
 
-Smart contracts suite of Numo-0, an automated market maker that replicates "Squeeth" on the EVM -- an option-like derivative that squares returns. 
+Smart contracts suite of Numo Squared, an automated market maker that replicates "Squeeth" on the EVM -- an option-like derivative that squares returns. 
 
 ## Installation
 
