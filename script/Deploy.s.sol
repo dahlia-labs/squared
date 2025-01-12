@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import { Script } from "forge-std/Script.sol";
 import { console2 } from "forge-std/console2.sol";
 
-import { CREATE3Factory } from "create3-factory/CREATE3Factory.sol";
+// import { CREATE3Factory } from "create3-factory/CREATE3Factory.sol";
 
 import { Factory } from "src/core/Factory.sol";
 import { LiquidityManager } from "src/periphery/LiquidityManager.sol";
@@ -32,15 +32,15 @@ contract Deploy is Script {
 
     lendgineRouter = address(new LendgineRouter(factory, uniV2Factory, uniV3Factory, weth));
 
-    // factory = create3.deploy(keccak256("NumoFactory"), type(Factory).creationCode);
+    // factory = create2.deploy(keccak256("SquaredFactory"), type(Factory).creationCode);
 
-    // liquidityManager = create3.deploy(
-    //   keccak256("NumoLiquidityManager"), bytes.concat(type(LiquidityManager).creationCode, abi.encode(factory, weth))
+    // liquidityManager = create2.deploy(
+    //   keccak256("SquaredManager"), bytes.concat(type(LiquidityManager).creationCode, abi.encode(factory, weth))
     // );
 
-    // lendgineRouter = create3.deploy(
-    //   keccak256("NumoLendgineRouter"),
-    //   bytes.concat(type(LendgineRouter).creationCode, abi.encode(factory, uniV2Factory, uniV3Factory, weth))
+    // lendgineRouter = create2.deploy(
+    //   keccak256("SquaredRouter"),
+    //   bytes.concat(type(SquaredRouter).creationCode, abi.encode(factory, uniV2Factory, uniV3Factory, weth))
     // );
   }
 }
