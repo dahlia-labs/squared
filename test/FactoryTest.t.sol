@@ -2,19 +2,19 @@
 pragma solidity ^0.8.0;
 
 import { Factory } from "../src/core/Factory.sol";
-import { Lendgine } from "../src/core/Lendgine.sol";
+import { Squared } from "../src/core/Squared.sol";
 import { Test } from "forge-std/Test.sol";
 
-import { LendgineAddress } from "../src/periphery/libraries/LendgineAddress.sol";
+import { SquaredAddress } from "../src/periphery/libraries/SquaredAddress.sol";
 
 contract FactoryTest is Test {
-  event LendgineCreated(
+  event SquaredCreated(
     address indexed token0,
     address indexed token1,
     uint256 token0Scale,
     uint256 token1Scale,
     uint256 indexed upperBound,
-    address lendgine
+    address squared
   );
 
   Factory public factory;
@@ -23,38 +23,38 @@ contract FactoryTest is Test {
     factory = new Factory();
   }
 
-  function testGetLendgine() external {
-    address lendgine = factory.createLendgine(address(1), address(2), 18, 18, 1e18);
+  function testGetSquared() external {
+    address squared = factory.createSquared(address(1), address(2), 18, 18, 1e18);
 
-    assertEq(lendgine, factory.getLendgine(address(1), address(2), 18, 18, 1e18));
+    assertEq(squared, factory.getSquared(address(1), address(2), 18, 18, 1e18));
   }
 
   function testDeployAddress() external {
-    address lendgineEstimate = LendgineAddress.computeAddress(address(factory), address(1), address(2), 18, 18, 1e18);
+    address squaredEstimate = SquaredAddress.computeAddress(address(factory), address(1), address(2), 18, 18, 1e18);
 
-    address lendgine = factory.createLendgine(address(1), address(2), 18, 18, 1e18);
+    address squared = factory.createSquared(address(1), address(2), 18, 18, 1e18);
 
-    assertEq(lendgine, lendgineEstimate);
+    assertEq(squared, squaredEstimate);
   }
 
   function testSameTokenError() external {
     vm.expectRevert(Factory.SameTokenError.selector);
-    factory.createLendgine(address(1), address(1), 18, 18, 1e18);
+    factory.createSquared(address(1), address(1), 18, 18, 1e18);
   }
 
   function testZeroAddressError() external {
     vm.expectRevert(Factory.ZeroAddressError.selector);
-    factory.createLendgine(address(0), address(1), 18, 18, 1e18);
+    factory.createSquared(address(0), address(1), 18, 18, 1e18);
 
     vm.expectRevert(Factory.ZeroAddressError.selector);
-    factory.createLendgine(address(1), address(0), 18, 18, 1e18);
+    factory.createSquared(address(1), address(0), 18, 18, 1e18);
   }
 
   function testDeployedError() external {
-    factory.createLendgine(address(1), address(2), 18, 18, 1e18);
+    factory.createSquared(address(1), address(2), 18, 18, 1e18);
 
     vm.expectRevert(Factory.DeployedError.selector);
-    factory.createLendgine(address(1), address(2), 18, 18, 1e18);
+    factory.createSquared(address(1), address(2), 18, 18, 1e18);
   }
 
   function helpParametersZero() private {
@@ -71,13 +71,13 @@ contract FactoryTest is Test {
   function testParameters() external {
     helpParametersZero();
 
-    factory.createLendgine(address(1), address(2), 18, 18, 1e18);
+    factory.createSquared(address(1), address(2), 18, 18, 1e18);
 
     helpParametersZero();
   }
 
   function testEmit() external {
-    address lendgineEstimate = address(
+    address squaredEstimate = address(
       uint160(
         uint256(
           keccak256(
@@ -85,14 +85,14 @@ contract FactoryTest is Test {
               hex"ff",
               address(factory),
               keccak256(abi.encode(address(1), address(2), 18, 18, 1e18)),
-              keccak256(type(Lendgine).creationCode)
+              keccak256(type(Squared).creationCode)
             )
           )
         )
       )
     );
     vm.expectEmit(true, true, true, true, address(factory));
-    emit LendgineCreated(address(1), address(2), 18, 18, 1e18, lendgineEstimate);
-    factory.createLendgine(address(1), address(2), 18, 18, 1e18);
+    emit SquaredCreated(address(1), address(2), 18, 18, 1e18, squaredEstimate);
+    factory.createSquared(address(1), address(2), 18, 18, 1e18);
   }
 }

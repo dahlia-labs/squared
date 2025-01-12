@@ -8,7 +8,7 @@ import { console2 } from "forge-std/console2.sol";
 
 import { Factory } from "src/core/Factory.sol";
 import { LiquidityManager } from "src/periphery/LiquidityManager.sol";
-import { LendgineRouter } from "src/periphery/LendgineRouter.sol";
+import { SquaredRouter } from "src/periphery/SquaredRouter.sol";
 
 contract Deploy is Script {
   address constant create3Factory = 0x93FEC2C00BfE902F733B57c5a6CeeD7CD1384AE1;
@@ -20,7 +20,7 @@ contract Deploy is Script {
   //Uniswap deployed WETH
   address constant weth = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
 
-  function run() external returns (address factory, address liquidityManager, address lendgineRouter) {
+  function run() external returns (address factory, address liquidityManager, address squaredRouter) {
     // CREATE3Factory create3 = CREATE3Factory(create3Factory);
 
     uint256 pk = vm.envUint("PRIVATE_KEY");
@@ -30,7 +30,7 @@ contract Deploy is Script {
 
     liquidityManager = address(new LiquidityManager(factory, weth));
 
-    lendgineRouter = address(new LendgineRouter(factory, uniV2Factory, uniV3Factory, weth));
+    squaredRouter = address(new SquaredRouter(factory, uniV2Factory, uniV3Factory, weth));
 
     // factory = create2.deploy(keccak256("SquaredFactory"), type(Factory).creationCode);
 
@@ -38,7 +38,7 @@ contract Deploy is Script {
     //   keccak256("SquaredManager"), bytes.concat(type(LiquidityManager).creationCode, abi.encode(factory, weth))
     // );
 
-    // lendgineRouter = create2.deploy(
+    // squaredRouter = create2.deploy(
     //   keccak256("SquaredRouter"),
     //   bytes.concat(type(SquaredRouter).creationCode, abi.encode(factory, uniV2Factory, uniV3Factory, weth))
     // );

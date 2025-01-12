@@ -8,7 +8,7 @@ import { TestHelper } from "./utils/TestHelper.sol";
 contract LiquidityManagerTest is TestHelper {
   event AddLiquidity(
     address indexed from,
-    address indexed lendgine,
+    address indexed squared,
     uint256 liquidity,
     uint256 size,
     uint256 amount0,
@@ -18,7 +18,7 @@ contract LiquidityManagerTest is TestHelper {
 
   event RemoveLiquidity(
     address indexed from,
-    address indexed lendgine,
+    address indexed squared,
     uint256 liquidity,
     uint256 size,
     uint256 amount0,
@@ -26,7 +26,7 @@ contract LiquidityManagerTest is TestHelper {
     address indexed to
   );
 
-  event Collect(address indexed from, address indexed lendgine, uint256 amount, address indexed to);
+  event Collect(address indexed from, address indexed squared, uint256 amount, address indexed to);
 
   LiquidityManager public liquidityManager;
 
@@ -70,14 +70,14 @@ contract LiquidityManagerTest is TestHelper {
   function testAddPositionEmpty() external {
     _addLiquidity(cuh, cuh, 1 ether, 8 ether, 1 ether);
 
-    // test lendgine storage
-    assertEq(lendgine.totalLiquidity(), 1 ether);
-    assertEq(lendgine.totalPositionSize(), 1 ether);
-    assertEq(lendgine.reserve0(), 1 ether);
-    assertEq(lendgine.reserve1(), 8 ether);
+    // test squared storage
+    assertEq(squared.totalLiquidity(), 1 ether);
+    assertEq(squared.totalPositionSize(), 1 ether);
+    assertEq(squared.reserve0(), 1 ether);
+    assertEq(squared.reserve1(), 8 ether);
 
-    // test lendgine position
-    (uint256 positionSize,,) = lendgine.positions(address(liquidityManager));
+    // test squared position
+    (uint256 positionSize,,) = squared.positions(address(liquidityManager));
     assertEq(1 ether, positionSize);
 
     // test balances
@@ -85,7 +85,7 @@ contract LiquidityManagerTest is TestHelper {
     assertEq(0, token1.balanceOf(address(liquidityManager)));
 
     // test liquidity manager position
-    (positionSize,,) = liquidityManager.positions(cuh, address(lendgine));
+    (positionSize,,) = liquidityManager.positions(cuh, address(squared));
     assertEq(1 ether, positionSize);
   }
 
@@ -94,14 +94,14 @@ contract LiquidityManagerTest is TestHelper {
 
     _addLiquidity(cuh, cuh, 1 ether, 8 ether, 1 ether);
 
-    // test lendgine storage
-    assertEq(lendgine.totalLiquidity(), 2 ether);
-    assertEq(lendgine.totalPositionSize(), 2 ether);
-    assertEq(lendgine.reserve0(), 2 ether);
-    assertEq(lendgine.reserve1(), 16 ether);
+    // test squared storage
+    assertEq(squared.totalLiquidity(), 2 ether);
+    assertEq(squared.totalPositionSize(), 2 ether);
+    assertEq(squared.reserve0(), 2 ether);
+    assertEq(squared.reserve1(), 16 ether);
 
-    // test lendgine position
-    (uint256 positionSize,,) = lendgine.positions(address(liquidityManager));
+    // test squared position
+    (uint256 positionSize,,) = squared.positions(address(liquidityManager));
     assertEq(1 ether, positionSize);
 
     // test balances
@@ -109,7 +109,7 @@ contract LiquidityManagerTest is TestHelper {
     assertEq(0, token1.balanceOf(address(liquidityManager)));
 
     // test liquidity manager position
-    (positionSize,,) = liquidityManager.positions(cuh, address(lendgine));
+    (positionSize,,) = liquidityManager.positions(cuh, address(squared));
     assertEq(1 ether, positionSize);
   }
 
@@ -170,19 +170,19 @@ contract LiquidityManagerTest is TestHelper {
 
     _addLiquidity(cuh, cuh, 1 ether, 8 ether, 1 ether);
 
-    uint256 borrowRate = lendgine.getBorrowRate(0.5 ether, 1 ether);
+    uint256 borrowRate = squared.getBorrowRate(0.5 ether, 1 ether);
     uint256 lpDilution = borrowRate / 2; // 0.5 lp for one year
     uint256 size = (1 ether * 1 ether) / (1 ether - lpDilution);
 
-    // test lendgine storage
-    assertEq(lendgine.totalLiquidity(), 1.5 ether);
-    assertEq(lendgine.totalPositionSize(), 1 ether + size);
-    assertEq(lendgine.reserve0(), 1.5 ether);
-    assertEq(lendgine.reserve1(), 12 ether);
+    // test squared storage
+    assertEq(squared.totalLiquidity(), 1.5 ether);
+    assertEq(squared.totalPositionSize(), 1 ether + size);
+    assertEq(squared.reserve0(), 1.5 ether);
+    assertEq(squared.reserve1(), 12 ether);
 
-    // test lendgine position
+    // test squared position
     (uint256 positionSize, uint256 rewardPerPositionPaid, uint256 tokensOwed) =
-      lendgine.positions(address(liquidityManager));
+      squared.positions(address(liquidityManager));
     assertEq(1 ether + size, positionSize);
     assertEq(10 * lpDilution, rewardPerPositionPaid);
     assertEq(10 * lpDilution, tokensOwed);
@@ -192,7 +192,7 @@ contract LiquidityManagerTest is TestHelper {
     assertEq(0, token1.balanceOf(address(liquidityManager)));
 
     // test liquidity manager position
-    (positionSize, rewardPerPositionPaid, tokensOwed) = liquidityManager.positions(cuh, address(lendgine));
+    (positionSize, rewardPerPositionPaid, tokensOwed) = liquidityManager.positions(cuh, address(squared));
     assertEq(size + 1 ether, positionSize);
     assertEq(10 * lpDilution, rewardPerPositionPaid);
     assertEq(10 * lpDilution, tokensOwed);
@@ -207,18 +207,18 @@ contract LiquidityManagerTest is TestHelper {
 
     _addLiquidity(cuh, cuh, 1 ether, 8 ether, 1 ether);
 
-    uint256 borrowRate = lendgine.getBorrowRate(0.5 ether, 1 ether);
+    uint256 borrowRate = squared.getBorrowRate(0.5 ether, 1 ether);
     uint256 lpDilution = borrowRate / 2; // 0.5 lp for one year
     uint256 size = (1 ether * 1 ether) / (1 ether - lpDilution);
 
-    // test lendgine storage
-    assertEq(lendgine.totalLiquidity(), 1.5 ether);
-    assertEq(lendgine.totalPositionSize(), 1 ether + size);
-    assertEq(lendgine.reserve0(), 1.5 ether);
-    assertEq(lendgine.reserve1(), 12 ether);
+    // test squared storage
+    assertEq(squared.totalLiquidity(), 1.5 ether);
+    assertEq(squared.totalPositionSize(), 1 ether + size);
+    assertEq(squared.reserve0(), 1.5 ether);
+    assertEq(squared.reserve1(), 12 ether);
 
-    // test lendgine position
-    (uint256 positionSize, uint256 rewardPerPositionPaid,) = lendgine.positions(address(liquidityManager));
+    // test squared position
+    (uint256 positionSize, uint256 rewardPerPositionPaid,) = squared.positions(address(liquidityManager));
     assertEq(1 ether + size, positionSize);
     assertEq(10 * lpDilution, rewardPerPositionPaid);
 
@@ -227,7 +227,7 @@ contract LiquidityManagerTest is TestHelper {
     assertEq(0, token1.balanceOf(address(liquidityManager)));
 
     // test liquidity manager position
-    (positionSize, rewardPerPositionPaid,) = liquidityManager.positions(cuh, address(lendgine));
+    (positionSize, rewardPerPositionPaid,) = liquidityManager.positions(cuh, address(squared));
     assertEq(size, positionSize);
     assertEq(10 * lpDilution, rewardPerPositionPaid);
   }
@@ -260,7 +260,7 @@ contract LiquidityManagerTest is TestHelper {
     token1.approve(address(liquidityManager), 8 ether);
 
     vm.expectEmit(true, true, true, true, address(liquidityManager));
-    emit AddLiquidity(cuh, address(lendgine), 1 ether, 1 ether, 1 ether, 8 ether, cuh);
+    emit AddLiquidity(cuh, address(squared), 1 ether, 1 ether, 1 ether, 8 ether, cuh);
     liquidityManager.addLiquidity(
       LiquidityManager.AddLiquidityParams({
         token0: address(token0),
@@ -298,14 +298,14 @@ contract LiquidityManagerTest is TestHelper {
       })
     );
 
-    // test lendgine storage
-    assertEq(lendgine.totalLiquidity(), 0);
-    assertEq(lendgine.totalPositionSize(), 0);
-    assertEq(lendgine.reserve0(), 0);
-    assertEq(lendgine.reserve1(), 0);
+    // test squared storage
+    assertEq(squared.totalLiquidity(), 0);
+    assertEq(squared.totalPositionSize(), 0);
+    assertEq(squared.reserve0(), 0);
+    assertEq(squared.reserve1(), 0);
 
-    // test lendgine position
-    (uint256 positionSize,,) = lendgine.positions(address(liquidityManager));
+    // test squared position
+    (uint256 positionSize,,) = squared.positions(address(liquidityManager));
     assertEq(0, positionSize);
 
     // test balances
@@ -313,7 +313,7 @@ contract LiquidityManagerTest is TestHelper {
     assertEq(0, token1.balanceOf(address(liquidityManager)));
 
     // test liquidity manager position
-    (positionSize,,) = liquidityManager.positions(cuh, address(lendgine));
+    (positionSize,,) = liquidityManager.positions(cuh, address(squared));
     assertEq(0, positionSize);
   }
 
@@ -357,14 +357,14 @@ contract LiquidityManagerTest is TestHelper {
       })
     );
 
-    // test lendgine storage
-    assertEq(lendgine.totalLiquidity(), 0);
-    assertEq(lendgine.totalPositionSize(), 0);
-    assertEq(lendgine.reserve0(), 0);
-    assertEq(lendgine.reserve1(), 0);
+    // test squared storage
+    assertEq(squared.totalLiquidity(), 0);
+    assertEq(squared.totalPositionSize(), 0);
+    assertEq(squared.reserve0(), 0);
+    assertEq(squared.reserve1(), 0);
 
-    // test lendgine position
-    (uint256 positionSize,,) = lendgine.positions(address(liquidityManager));
+    // test squared position
+    (uint256 positionSize,,) = squared.positions(address(liquidityManager));
     assertEq(0, positionSize);
 
     // test balances
@@ -372,7 +372,7 @@ contract LiquidityManagerTest is TestHelper {
     assertEq(8 ether, token1.balanceOf(address(liquidityManager)));
 
     // test liquidity manager position
-    (positionSize,,) = liquidityManager.positions(cuh, address(lendgine));
+    (positionSize,,) = liquidityManager.positions(cuh, address(squared));
     assertEq(0, positionSize);
   }
 
@@ -403,7 +403,7 @@ contract LiquidityManagerTest is TestHelper {
 
     vm.prank(cuh);
     vm.expectEmit(true, true, true, true, address(liquidityManager));
-    emit RemoveLiquidity(cuh, address(lendgine), 1 ether, 1 ether, 1 ether, 8 ether, cuh);
+    emit RemoveLiquidity(cuh, address(squared), 1 ether, 1 ether, 1 ether, 8 ether, cuh);
     liquidityManager.removeLiquidity(
       LiquidityManager.RemoveLiquidityParams({
         token0: address(token0),
@@ -441,17 +441,17 @@ contract LiquidityManagerTest is TestHelper {
       })
     );
 
-    uint256 borrowRate = lendgine.getBorrowRate(0.5 ether, 1 ether);
+    uint256 borrowRate = squared.getBorrowRate(0.5 ether, 1 ether);
     uint256 lpDilution = borrowRate / 2; // 0.5 lp for one year
 
-    // test lendgine storage
-    assertEq(lendgine.totalLiquidity(), lpDilution / 2);
-    assertEq(lendgine.totalPositionSize(), 0.5 ether);
-    assertEq(lendgine.reserve0(), lpDilution / 2);
-    assertEq(lendgine.reserve1(), lpDilution * 4);
+    // test squared storage
+    assertEq(squared.totalLiquidity(), lpDilution / 2);
+    assertEq(squared.totalPositionSize(), 0.5 ether);
+    assertEq(squared.reserve0(), lpDilution / 2);
+    assertEq(squared.reserve1(), lpDilution * 4);
 
-    // test lendgine position
-    (uint256 positionSize, uint256 rewardPerPositionPaid,) = lendgine.positions(address(liquidityManager));
+    // test squared position
+    (uint256 positionSize, uint256 rewardPerPositionPaid,) = squared.positions(address(liquidityManager));
     assertEq(0.5 ether, positionSize);
     assertEq(lpDilution * 10, rewardPerPositionPaid);
 
@@ -460,7 +460,7 @@ contract LiquidityManagerTest is TestHelper {
     assertEq(0, token1.balanceOf(address(liquidityManager)));
 
     // test liquidity manager position
-    (positionSize, rewardPerPositionPaid,) = liquidityManager.positions(cuh, address(lendgine));
+    (positionSize, rewardPerPositionPaid,) = liquidityManager.positions(cuh, address(squared));
     assertEq(0.5 ether, positionSize);
     assertEq(lpDilution * 10, rewardPerPositionPaid);
   }
@@ -470,24 +470,24 @@ contract LiquidityManagerTest is TestHelper {
     _mint(address(this), address(this), 5 ether);
     vm.warp(365 days + 1);
 
-    uint256 borrowRate = lendgine.getBorrowRate(0.5 ether, 1 ether);
+    uint256 borrowRate = squared.getBorrowRate(0.5 ether, 1 ether);
     uint256 lpDilution = borrowRate / 2; // 0.5 lp for one year
 
     vm.prank(cuh);
     liquidityManager.collect(
-      LiquidityManager.CollectParams({ lendgine: address(lendgine), recipient: cuh, amountRequested: lpDilution * 10 })
+      LiquidityManager.CollectParams({ squared: address(squared), recipient: cuh, amountRequested: lpDilution * 10 })
     );
 
-    // test lendgine storage slots
-    assertEq(lpDilution * 10, lendgine.rewardPerPositionStored());
+    // test squared storage slots
+    assertEq(lpDilution * 10, squared.rewardPerPositionStored());
 
-    // test lendgine position
-    (, uint256 rewardPerPositionPaid, uint256 tokensOwed) = lendgine.positions(address(liquidityManager));
+    // test squared position
+    (, uint256 rewardPerPositionPaid, uint256 tokensOwed) = squared.positions(address(liquidityManager));
     assertEq(lpDilution * 10, rewardPerPositionPaid);
     assertEq(0, tokensOwed);
 
     // test liquidity manager position
-    (, rewardPerPositionPaid, tokensOwed) = liquidityManager.positions(cuh, address(lendgine));
+    (, rewardPerPositionPaid, tokensOwed) = liquidityManager.positions(cuh, address(squared));
     assertEq(lpDilution * 10, rewardPerPositionPaid);
     assertEq(0, tokensOwed);
 
@@ -500,24 +500,24 @@ contract LiquidityManagerTest is TestHelper {
     _mint(address(this), address(this), 5 ether);
     vm.warp(365 days + 1);
 
-    uint256 borrowRate = lendgine.getBorrowRate(0.5 ether, 1 ether);
+    uint256 borrowRate = squared.getBorrowRate(0.5 ether, 1 ether);
     uint256 lpDilution = borrowRate / 2; // 0.5 lp for one year
 
     vm.prank(cuh);
     liquidityManager.collect(
-      LiquidityManager.CollectParams({ lendgine: address(lendgine), recipient: cuh, amountRequested: 100 ether })
+      LiquidityManager.CollectParams({ squared: address(squared), recipient: cuh, amountRequested: 100 ether })
     );
 
-    // test lendgine storage slots
-    assertEq(lpDilution * 10, lendgine.rewardPerPositionStored());
+    // test squared storage slots
+    assertEq(lpDilution * 10, squared.rewardPerPositionStored());
 
-    // test lendgine position
-    (, uint256 rewardPerPositionPaid, uint256 tokensOwed) = lendgine.positions(address(liquidityManager));
+    // test squared position
+    (, uint256 rewardPerPositionPaid, uint256 tokensOwed) = squared.positions(address(liquidityManager));
     assertEq(lpDilution * 10, rewardPerPositionPaid);
     assertEq(0, tokensOwed);
 
     // test liquidity manager position
-    (, rewardPerPositionPaid, tokensOwed) = liquidityManager.positions(cuh, address(lendgine));
+    (, rewardPerPositionPaid, tokensOwed) = liquidityManager.positions(cuh, address(squared));
     assertEq(lpDilution * 10, rewardPerPositionPaid);
     assertEq(0, tokensOwed);
 
@@ -530,13 +530,13 @@ contract LiquidityManagerTest is TestHelper {
     _mint(address(this), address(this), 5 ether);
     vm.warp(365 days + 1);
 
-    uint256 borrowRate = lendgine.getBorrowRate(0.5 ether, 1 ether);
+    uint256 borrowRate = squared.getBorrowRate(0.5 ether, 1 ether);
     uint256 lpDilution = borrowRate / 2; // 0.5 lp for one year
 
     vm.prank(cuh);
     liquidityManager.collect(
       LiquidityManager.CollectParams({
-        lendgine: address(lendgine),
+        squared: address(squared),
         recipient: address(0),
         amountRequested: lpDilution * 10
       })
@@ -551,14 +551,14 @@ contract LiquidityManagerTest is TestHelper {
     _mint(address(this), address(this), 5 ether);
     vm.warp(365 days + 1);
 
-    uint256 borrowRate = lendgine.getBorrowRate(0.5 ether, 1 ether);
+    uint256 borrowRate = squared.getBorrowRate(0.5 ether, 1 ether);
     uint256 lpDilution = borrowRate / 2; // 0.5 lp for one year
 
     vm.prank(cuh);
     vm.expectEmit(true, true, true, true, address(liquidityManager));
-    emit Collect(cuh, address(lendgine), lpDilution * 10, cuh);
+    emit Collect(cuh, address(squared), lpDilution * 10, cuh);
     liquidityManager.collect(
-      LiquidityManager.CollectParams({ lendgine: address(lendgine), recipient: cuh, amountRequested: lpDilution * 10 })
+      LiquidityManager.CollectParams({ squared: address(squared), recipient: cuh, amountRequested: lpDilution * 10 })
     );
   }
 }

@@ -5,7 +5,7 @@ import { IPair } from "./IPair.sol";
 
 /// @notice Lending engine for borrowing and lending liquidity provider shares
 /// @author Kyle Scott and Robert Leifke
-interface ILendgine is IPair {
+interface ISquared is IPair {
   /// @notice Returns information about a position given the controllers address
   function positions(address) external view returns (uint256, uint256, uint256);
 

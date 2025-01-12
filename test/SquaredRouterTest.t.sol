@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.0;
 
-import { Lendgine } from "../src/core/Lendgine.sol";
-import { LendgineRouter } from "../src/periphery/LendgineRouter.sol";
+import { Squared } from "../src/core/Squared.sol";
+import { SquaredRouter } from "../src/periphery/SquaredRouter.sol";
 import { SwapHelper } from "../src/periphery/SwapHelper.sol";
 import { TestHelper } from "./utils/TestHelper.sol";
 import { MockERC20 } from "./utils/mocks/MockERC20.sol";
@@ -12,12 +12,12 @@ import { IUniswapV2Pair } from "../src/periphery/UniswapV2/interfaces/IUniswapV2
 import { IUniswapV3Factory } from "../src/periphery/UniswapV3/interfaces/IUniswapV3Factory.sol";
 import { IUniswapV3Pool } from "../src/periphery/UniswapV3/interfaces/IUniswapV3Pool.sol";
 
-contract LendgineRouterTest is TestHelper {
-  event Mint(address indexed from, address indexed lendgine, uint256 collateral, uint256 shares, address indexed to);
+contract SquaredRouterTest is TestHelper {
+  event Mint(address indexed from, address indexed squared, uint256 collateral, uint256 shares, address indexed to);
 
-  event Burn(address indexed from, address indexed lendgine, uint256 collateral, uint256 shares, address indexed to);
+  event Burn(address indexed from, address indexed squared, uint256 collateral, uint256 shares, address indexed to);
 
-  LendgineRouter public lendgineRouter;
+  SquaredRouter public squaredRouter;
 
   IUniswapV2Factory public uniswapV2Factory = IUniswapV2Factory(0xB7f907f7A9eBC822a80BD25E224be42Ce0A698A0);
   IUniswapV2Pair public uniswapV2Pair;
@@ -32,7 +32,7 @@ contract LendgineRouterTest is TestHelper {
     vm.rollFork(2_244_070); //latest block
 
     _setUp();
-    lendgineRouter = new LendgineRouter(
+    squaredRouter = new SquaredRouter(
       address(factory),
       address(uniswapV2Factory),
       address(uniswapV3Factory),
@@ -60,8 +60,8 @@ contract LendgineRouterTest is TestHelper {
     vm.prank(0xb3A16C2B68BBB0111EbD27871a5934b949837D95);
     token1.transfer(cuh, 100 ether);
 
-    // deploy lendgine
-    lendgine = Lendgine(factory.createLendgine(address(token0), address(token1), 18, 18, 3 ether));
+    // deploy squared
+    squared = Squared(factory.createSquared(address(token0), address(token1), 18, 18, 3 ether));
 
     // deposit tokens
     vm.startPrank(cuh);
@@ -70,7 +70,7 @@ contract LendgineRouterTest is TestHelper {
     vm.stopPrank();
 
     // price is .735 weth / uni
-    lendgine.deposit(
+    squared.deposit(
       address(this),
       10 ether,
       abi.encode(
@@ -89,11 +89,11 @@ contract LendgineRouterTest is TestHelper {
     token1.mint(cuh, 1 ether);
 
     vm.prank(cuh);
-    token1.approve(address(lendgineRouter), 1 ether);
+    token1.approve(address(squaredRouter), 1 ether);
 
     vm.prank(cuh);
-    lendgineRouter.mint(
-      LendgineRouter.MintParams({
+    squaredRouter.mint(
+      SquaredRouter.MintParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -110,35 +110,35 @@ contract LendgineRouterTest is TestHelper {
     );
 
     // check option amounts
-    assertEq(0.1 ether, lendgine.totalSupply());
-    assertEq(0.1 ether, lendgine.balanceOf(cuh));
+    assertEq(0.1 ether, squared.totalSupply());
+    assertEq(0.1 ether, squared.balanceOf(cuh));
 
     // check uniswap
     // swap 0.1 ether of token 0 to token 1
     assertEq(100.1 ether, token0.balanceOf(address(uniswapV2Pair)));
     assertApproxEqRel(99.9 ether, token1.balanceOf(address(uniswapV2Pair)), 0.001 ether);
 
-    // check lendgine storage
-    assertEq(0.1 ether, lendgine.totalLiquidityBorrowed());
+    // check squared storage
+    assertEq(0.1 ether, squared.totalLiquidityBorrowed());
 
     // check user balances
     assertApproxEqRel(0.9 ether, token1.balanceOf(cuh), 1 ether);
 
     // check router token balances
-    assertEq(0, token0.balanceOf(address(lendgineRouter)));
-    assertEq(0, token1.balanceOf(address(lendgineRouter)));
-    assertEq(0, lendgine.balanceOf(address(lendgineRouter)));
+    assertEq(0, token0.balanceOf(address(squaredRouter)));
+    assertEq(0, token1.balanceOf(address(squaredRouter)));
+    assertEq(0, squared.balanceOf(address(squaredRouter)));
   }
 
   function testMintBorrow() external {
     token1.mint(cuh, 1 ether);
 
     vm.prank(cuh);
-    token1.approve(address(lendgineRouter), 1 ether);
+    token1.approve(address(squaredRouter), 1 ether);
 
     vm.prank(cuh);
-    lendgineRouter.mint(
-      LendgineRouter.MintParams({
+    squaredRouter.mint(
+      SquaredRouter.MintParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -155,24 +155,24 @@ contract LendgineRouterTest is TestHelper {
     );
 
     // check option amounts
-    assertEq(0.98 ether, lendgine.totalSupply());
-    assertEq(0.98 ether, lendgine.balanceOf(cuh));
+    assertEq(0.98 ether, squared.totalSupply());
+    assertEq(0.98 ether, squared.balanceOf(cuh));
 
     // check uniswap
     // swap 0.98 ether of token 0 to token 1
     assertEq(100.98 ether, token0.balanceOf(address(uniswapV2Pair)));
     assertApproxEqRel(99.02 ether, token1.balanceOf(address(uniswapV2Pair)), 0.001 ether);
 
-    // check lendgine storage
-    assertEq(0.98 ether, lendgine.totalLiquidityBorrowed());
+    // check squared storage
+    assertEq(0.98 ether, squared.totalLiquidityBorrowed());
 
     // check user balances
     assertApproxEqRel(0, token1.balanceOf(cuh), 1 ether);
 
     // check router token balances
-    assertEq(0, token0.balanceOf(address(lendgineRouter)));
-    assertEq(0, token1.balanceOf(address(lendgineRouter)));
-    assertEq(0, lendgine.balanceOf(address(lendgineRouter)));
+    assertEq(0, token0.balanceOf(address(squaredRouter)));
+    assertEq(0, token1.balanceOf(address(squaredRouter)));
+    assertEq(0, squared.balanceOf(address(squaredRouter)));
   }
 
   function testMintV3() external {
@@ -182,11 +182,11 @@ contract LendgineRouterTest is TestHelper {
     uint256 balance1Before = token1.balanceOf(address(uniswapV3Pool));
 
     vm.prank(cuh);
-    token1.approve(address(lendgineRouter), 1 ether);
+    token1.approve(address(squaredRouter), 1 ether);
 
     vm.prank(cuh);
-    lendgineRouter.mint(
-      LendgineRouter.MintParams({
+    squaredRouter.mint(
+      SquaredRouter.MintParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: 18,
@@ -203,33 +203,33 @@ contract LendgineRouterTest is TestHelper {
     );
 
     // check option amounts
-    assertEq(0.2 ether, lendgine.totalSupply());
-    assertEq(0.2 ether, lendgine.balanceOf(cuh));
+    assertEq(0.2 ether, squared.totalSupply());
+    assertEq(0.2 ether, squared.balanceOf(cuh));
 
     // check uniswap
     // swap (1.2 / 6) * .540 ether of token 0 to token 1
     assertApproxEqRel(balance0Before + 0.108 ether, token0.balanceOf(address(uniswapV3Pool)), 0.001 ether);
     assertApproxEqRel(balance1Before - 0.072 ether, token1.balanceOf(address(uniswapV3Pool)), 0.001 ether);
 
-    // check lendgine storage
-    assertEq(0.2 ether, lendgine.totalLiquidityBorrowed());
+    // check squared storage
+    assertEq(0.2 ether, squared.totalLiquidityBorrowed());
 
     // check router token balances
-    assertEq(0, token0.balanceOf(address(lendgineRouter)));
-    assertEq(0, token1.balanceOf(address(lendgineRouter)));
-    assertEq(0, lendgine.balanceOf(address(lendgineRouter)));
+    assertEq(0, token0.balanceOf(address(squaredRouter)));
+    assertEq(0, token1.balanceOf(address(squaredRouter)));
+    assertEq(0, squared.balanceOf(address(squaredRouter)));
   }
 
   function testAmountError() external {
     token1.mint(cuh, 1 ether);
 
     vm.prank(cuh);
-    token1.approve(address(lendgineRouter), 1 ether);
+    token1.approve(address(squaredRouter), 1 ether);
 
     vm.prank(cuh);
-    vm.expectRevert(LendgineRouter.AmountError.selector);
-    lendgineRouter.mint(
-      LendgineRouter.MintParams({
+    vm.expectRevert(SquaredRouter.AmountError.selector);
+    squaredRouter.mint(
+      SquaredRouter.MintParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -250,12 +250,12 @@ contract LendgineRouterTest is TestHelper {
     token1.mint(cuh, 1 ether);
 
     vm.prank(cuh);
-    token1.approve(address(lendgineRouter), 1 ether);
+    token1.approve(address(squaredRouter), 1 ether);
 
     vm.prank(cuh);
-    vm.expectRevert(LendgineRouter.AmountError.selector);
-    lendgineRouter.mint(
-      LendgineRouter.MintParams({
+    vm.expectRevert(SquaredRouter.AmountError.selector);
+    squaredRouter.mint(
+      SquaredRouter.MintParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -276,13 +276,13 @@ contract LendgineRouterTest is TestHelper {
     token1.mint(cuh, 1 ether);
 
     vm.prank(cuh);
-    token1.approve(address(lendgineRouter), 1 ether);
+    token1.approve(address(squaredRouter), 1 ether);
 
     vm.prank(cuh);
-    vm.expectEmit(true, true, true, true, address(lendgineRouter));
-    emit Mint(cuh, address(lendgine), 1 ether, 0.1 ether, cuh);
-    lendgineRouter.mint(
-      LendgineRouter.MintParams({
+    vm.expectEmit(true, true, true, true, address(squaredRouter));
+    emit Mint(cuh, address(squared), 1 ether, 0.1 ether, cuh);
+    squaredRouter.mint(
+      SquaredRouter.MintParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -303,11 +303,11 @@ contract LendgineRouterTest is TestHelper {
     token1.mint(cuh, 1 ether);
 
     vm.prank(cuh);
-    token1.approve(address(lendgineRouter), 1 ether);
+    token1.approve(address(squaredRouter), 1 ether);
 
     vm.prank(cuh);
-    lendgineRouter.mint(
-      LendgineRouter.MintParams({
+    squaredRouter.mint(
+      SquaredRouter.MintParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -324,11 +324,11 @@ contract LendgineRouterTest is TestHelper {
     );
 
     vm.prank(cuh);
-    lendgine.approve(address(lendgineRouter), 0.98 ether);
+    squared.approve(address(squaredRouter), 0.98 ether);
 
     vm.prank(cuh);
-    lendgineRouter.burn(
-      LendgineRouter.BurnParams({
+    squaredRouter.burn(
+      SquaredRouter.BurnParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -345,12 +345,12 @@ contract LendgineRouterTest is TestHelper {
       })
     );
 
-    // check lendgine token
-    assertEq(0, lendgine.balanceOf(cuh));
-    assertEq(0, lendgine.totalSupply());
+    // check squared token
+    assertEq(0, squared.balanceOf(cuh));
+    assertEq(0, squared.totalSupply());
 
-    // check lendgine storage slots
-    assertEq(0, lendgine.totalLiquidityBorrowed());
+    // check squared storage slots
+    assertEq(0, squared.totalLiquidityBorrowed());
 
     // check uniswap
     assertApproxEqRel(100 ether, token0.balanceOf(address(uniswapV2Pair)), 0.001 ether);
@@ -360,20 +360,20 @@ contract LendgineRouterTest is TestHelper {
     assertApproxEqRel(0.1 ether, token1.balanceOf(cuh), 1 ether);
 
     // check router token balances
-    assertEq(0, token0.balanceOf(address(lendgineRouter)));
-    assertEq(0, token1.balanceOf(address(lendgineRouter)));
-    assertEq(0, lendgine.balanceOf(address(lendgineRouter)));
+    assertEq(0, token0.balanceOf(address(squaredRouter)));
+    assertEq(0, token1.balanceOf(address(squaredRouter)));
+    assertEq(0, squared.balanceOf(address(squaredRouter)));
   }
 
   function testBurnNoLiquidity() external {
     token1.mint(cuh, 1 ether);
 
     vm.prank(cuh);
-    token1.approve(address(lendgineRouter), 1 ether);
+    token1.approve(address(squaredRouter), 1 ether);
 
     vm.prank(cuh);
-    lendgineRouter.mint(
-      LendgineRouter.MintParams({
+    squaredRouter.mint(
+      SquaredRouter.MintParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -392,11 +392,11 @@ contract LendgineRouterTest is TestHelper {
     _withdraw(address(this), address(this), 99.9 ether);
 
     vm.prank(cuh);
-    lendgine.approve(address(lendgineRouter), 0.1 ether);
+    squared.approve(address(squaredRouter), 0.1 ether);
 
     vm.prank(cuh);
-    lendgineRouter.burn(
-      LendgineRouter.BurnParams({
+    squaredRouter.burn(
+      SquaredRouter.BurnParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -413,12 +413,12 @@ contract LendgineRouterTest is TestHelper {
       })
     );
 
-    // check lendgine token
-    assertEq(0, lendgine.balanceOf(cuh));
-    assertEq(0, lendgine.totalSupply());
+    // check squared token
+    assertEq(0, squared.balanceOf(cuh));
+    assertEq(0, squared.totalSupply());
 
-    // check lendgine storage slots
-    assertEq(0, lendgine.totalLiquidityBorrowed());
+    // check squared storage slots
+    assertEq(0, squared.totalLiquidityBorrowed());
 
     // check uniswap
     assertApproxEqRel(100 ether, token0.balanceOf(address(uniswapV2Pair)), 0.001 ether);
@@ -428,9 +428,9 @@ contract LendgineRouterTest is TestHelper {
     assertApproxEqRel(0.1 ether, token1.balanceOf(cuh), 1 ether);
 
     // check router token balances
-    assertEq(0, token0.balanceOf(address(lendgineRouter)));
-    assertEq(0, token1.balanceOf(address(lendgineRouter)));
-    assertEq(0, lendgine.balanceOf(address(lendgineRouter)));
+    assertEq(0, token0.balanceOf(address(squaredRouter)));
+    assertEq(0, token1.balanceOf(address(squaredRouter)));
+    assertEq(0, squared.balanceOf(address(squaredRouter)));
   }
 
   function testBurnV3() external {
@@ -442,11 +442,11 @@ contract LendgineRouterTest is TestHelper {
     uint256 userBalanceBefore = token1.balanceOf(cuh);
 
     vm.prank(cuh);
-    token1.approve(address(lendgineRouter), 1 ether);
+    token1.approve(address(squaredRouter), 1 ether);
 
     vm.prank(cuh);
-    lendgineRouter.mint(
-      LendgineRouter.MintParams({
+    squaredRouter.mint(
+      SquaredRouter.MintParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: 18,
@@ -463,11 +463,11 @@ contract LendgineRouterTest is TestHelper {
     );
 
     vm.prank(cuh);
-    lendgine.approve(address(lendgineRouter), 0.2 ether);
+    squared.approve(address(squaredRouter), 0.2 ether);
 
     vm.prank(cuh);
-    lendgineRouter.burn(
-      LendgineRouter.BurnParams({
+    squaredRouter.burn(
+      SquaredRouter.BurnParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: 18,
@@ -484,12 +484,12 @@ contract LendgineRouterTest is TestHelper {
       })
     );
 
-    // check lendgine token
-    assertEq(0, lendgine.balanceOf(cuh));
-    assertEq(0, lendgine.totalSupply());
+    // check squared token
+    assertEq(0, squared.balanceOf(cuh));
+    assertEq(0, squared.totalSupply());
 
-    // check lendgine storage slots
-    assertEq(0, lendgine.totalLiquidityBorrowed());
+    // check squared storage slots
+    assertEq(0, squared.totalLiquidityBorrowed());
 
     // check uniswap
     assertApproxEqRel(balance0Before, token0.balanceOf(address(uniswapV3Pool)), 0.001 ether);
@@ -499,20 +499,20 @@ contract LendgineRouterTest is TestHelper {
     assertApproxEqRel(userBalanceBefore, token1.balanceOf(cuh), 0.001 ether);
 
     // check router token balances
-    assertEq(0, token0.balanceOf(address(lendgineRouter)));
-    assertEq(0, token1.balanceOf(address(lendgineRouter)));
-    assertEq(0, lendgine.balanceOf(address(lendgineRouter)));
+    assertEq(0, token0.balanceOf(address(squaredRouter)));
+    assertEq(0, token1.balanceOf(address(squaredRouter)));
+    assertEq(0, squared.balanceOf(address(squaredRouter)));
   }
 
   function testBurnEmit() external {
     token1.mint(cuh, 1 ether);
 
     vm.prank(cuh);
-    token1.approve(address(lendgineRouter), 1 ether);
+    token1.approve(address(squaredRouter), 1 ether);
 
     vm.prank(cuh);
-    lendgineRouter.mint(
-      LendgineRouter.MintParams({
+    squaredRouter.mint(
+      SquaredRouter.MintParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -529,13 +529,13 @@ contract LendgineRouterTest is TestHelper {
     );
 
     vm.prank(cuh);
-    lendgine.approve(address(lendgineRouter), 0.98 ether);
+    squared.approve(address(squaredRouter), 0.98 ether);
 
     vm.prank(cuh);
-    vm.expectEmit(true, true, true, true, address(lendgineRouter));
-    emit Burn(cuh, address(lendgine), 9.8 ether, 0.98 ether, cuh);
-    lendgineRouter.burn(
-      LendgineRouter.BurnParams({
+    vm.expectEmit(true, true, true, true, address(squaredRouter));
+    emit Burn(cuh, address(squared), 9.8 ether, 0.98 ether, cuh);
+    squaredRouter.burn(
+      SquaredRouter.BurnParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -557,11 +557,11 @@ contract LendgineRouterTest is TestHelper {
     token1.mint(cuh, 1 ether);
 
     vm.prank(cuh);
-    token1.approve(address(lendgineRouter), 1 ether);
+    token1.approve(address(squaredRouter), 1 ether);
 
     vm.prank(cuh);
-    lendgineRouter.mint(
-      LendgineRouter.MintParams({
+    squaredRouter.mint(
+      SquaredRouter.MintParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -578,12 +578,12 @@ contract LendgineRouterTest is TestHelper {
     );
 
     vm.prank(cuh);
-    lendgine.approve(address(lendgineRouter), 0.98 ether);
+    squared.approve(address(squaredRouter), 0.98 ether);
 
     vm.prank(cuh);
-    vm.expectRevert(LendgineRouter.AmountError.selector);
-    lendgineRouter.burn(
-      LendgineRouter.BurnParams({
+    vm.expectRevert(SquaredRouter.AmountError.selector);
+    squaredRouter.burn(
+      SquaredRouter.BurnParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -605,11 +605,11 @@ contract LendgineRouterTest is TestHelper {
     token1.mint(cuh, 1 ether);
 
     vm.prank(cuh);
-    token1.approve(address(lendgineRouter), 1 ether);
+    token1.approve(address(squaredRouter), 1 ether);
 
     vm.prank(cuh);
-    lendgineRouter.mint(
-      LendgineRouter.MintParams({
+    squaredRouter.mint(
+      SquaredRouter.MintParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -626,12 +626,12 @@ contract LendgineRouterTest is TestHelper {
     );
 
     vm.prank(cuh);
-    lendgine.approve(address(lendgineRouter), 0.98 ether);
+    squared.approve(address(squaredRouter), 0.98 ether);
 
     vm.prank(cuh);
-    vm.expectRevert(LendgineRouter.AmountError.selector);
-    lendgineRouter.burn(
-      LendgineRouter.BurnParams({
+    vm.expectRevert(SquaredRouter.AmountError.selector);
+    squaredRouter.burn(
+      SquaredRouter.BurnParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -653,11 +653,11 @@ contract LendgineRouterTest is TestHelper {
     token1.mint(cuh, 1 ether);
 
     vm.prank(cuh);
-    token1.approve(address(lendgineRouter), 1 ether);
+    token1.approve(address(squaredRouter), 1 ether);
 
     vm.prank(cuh);
-    lendgineRouter.mint(
-      LendgineRouter.MintParams({
+    squaredRouter.mint(
+      SquaredRouter.MintParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -676,11 +676,11 @@ contract LendgineRouterTest is TestHelper {
     uint256 balanceBefore = token1.balanceOf(address(cuh));
 
     vm.prank(cuh);
-    lendgine.approve(address(lendgineRouter), 0.98 ether);
+    squared.approve(address(squaredRouter), 0.98 ether);
 
     vm.prank(cuh);
-    lendgineRouter.burn(
-      LendgineRouter.BurnParams({
+    squaredRouter.burn(
+      SquaredRouter.BurnParams({
         token0: address(token0),
         token1: address(token1),
         token0Exp: token0Scale,
@@ -697,12 +697,12 @@ contract LendgineRouterTest is TestHelper {
       })
     );
 
-    // check lendgine token
-    assertEq(0, lendgine.balanceOf(cuh));
-    assertEq(0, lendgine.totalSupply());
+    // check squared token
+    assertEq(0, squared.balanceOf(cuh));
+    assertEq(0, squared.totalSupply());
 
-    // check lendgine storage slots
-    assertEq(0, lendgine.totalLiquidityBorrowed());
+    // check squared storage slots
+    assertEq(0, squared.totalLiquidityBorrowed());
 
     // check uniswap
     assertApproxEqRel(100 ether, token0.balanceOf(address(uniswapV2Pair)), 0.001 ether);
@@ -712,8 +712,8 @@ contract LendgineRouterTest is TestHelper {
     assertEq(balanceBefore, token1.balanceOf(address(cuh)));
 
     // check router token balances
-    assertEq(0, token0.balanceOf(address(lendgineRouter)));
-    assertApproxEqRel(0.1 ether, token1.balanceOf(address(lendgineRouter)), 1 ether);
-    assertEq(0, lendgine.balanceOf(address(lendgineRouter)));
+    assertEq(0, token0.balanceOf(address(squaredRouter)));
+    assertApproxEqRel(0.1 ether, token1.balanceOf(address(squaredRouter)), 1 ether);
+    assertEq(0, squared.balanceOf(address(squaredRouter)));
   }
 }

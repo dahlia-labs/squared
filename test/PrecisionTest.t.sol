@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { Factory } from "../src/core/Factory.sol";
-import { Lendgine } from "../src/core/Lendgine.sol";
+import { Squared } from "../src/core/Squared.sol";
 import { Pair } from "../src/core/Pair.sol";
 import { TestHelper } from "./utils/TestHelper.sol";
 
@@ -25,7 +25,7 @@ contract PrecisionTest is TestHelper {
   }
 
   function testBaseline() external {
-    lendgine.invariant((upperBound * upperBound) / 1e18, 0, 1 ether);
+    squared.invariant((upperBound * upperBound) / 1e18, 0, 1 ether);
 
     uint256 value = (upperBound * upperBound) / 1e18;
     uint256 basePerDollar = 1e18;
@@ -38,9 +38,9 @@ contract PrecisionTest is TestHelper {
 
   function testHighUpperBound() external {
     upperBound = 1e27;
-    lendgine = Lendgine(factory.createLendgine(address(token0), address(token1), token0Scale, token1Scale, upperBound));
+    squared = Squared(factory.createSquared(address(token0), address(token1), token0Scale, token1Scale, upperBound));
 
-    lendgine.invariant((upperBound * upperBound) / 1e18, 0, 1 ether);
+    squared.invariant((upperBound * upperBound) / 1e18, 0, 1 ether);
 
     uint256 value = (upperBound * upperBound) / 1e18;
     uint256 basePerDollar = 1e21;
@@ -53,9 +53,9 @@ contract PrecisionTest is TestHelper {
 
   function testLowUpperBound() external {
     upperBound = 1e9;
-    lendgine = Lendgine(factory.createLendgine(address(token0), address(token1), token0Scale, token1Scale, upperBound));
+    squared = Squared(factory.createSquared(address(token0), address(token1), token0Scale, token1Scale, upperBound));
 
-    lendgine.invariant((upperBound * upperBound) / 1e18, 0, 1 ether);
+    squared.invariant((upperBound * upperBound) / 1e18, 0, 1 ether);
 
     uint256 value = (upperBound * upperBound) / 1e18;
     uint256 basePerDollar = 1e27;

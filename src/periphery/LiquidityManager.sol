@@ -5,11 +5,11 @@ import { Multicall } from "./Multicall.sol";
 import { Payment } from "./Payment.sol";
 import { SelfPermit } from "./SelfPermit.sol";
 
-import { ILendgine } from "../core/interfaces/ILendgine.sol";
+import { ISquared } from "../core/interfaces/ISquared.sol";
 import { IPairMintCallback } from "../core/interfaces/callback/IPairMintCallback.sol";
 
 import { FullMath } from "../libraries/FullMath.sol";
-import { LendgineAddress } from "./libraries/LendgineAddress.sol";
+import { SquaredAddress } from "./libraries/SquaredAddress.sol";
 
 /// @notice Manages liquidity provider positions
 /// @author Kyle Scott and Robert Leifke
@@ -19,7 +19,7 @@ contract LiquidityManager is Multicall, Payment, SelfPermit, IPairMintCallback {
     //////////////////////////////////////////////////////////////*/
   event AddLiquidity(
     address indexed from,
-    address indexed lendgine,
+    address indexed squared,
     uint256 liquidity,
     uint256 size,
     uint256 amount0,
@@ -29,7 +29,7 @@ contract LiquidityManager is Multicall, Payment, SelfPermit, IPairMintCallback {
 
   event RemoveLiquidity(
     address indexed from,
-    address indexed lendgine,
+    address indexed squared,
     uint256 liquidity,
     uint256 size,
     uint256 amount0,
@@ -37,7 +37,7 @@ contract LiquidityManager is Multicall, Payment, SelfPermit, IPairMintCallback {
     address indexed to
   );
 
-  event Collect(address indexed from, address indexed lendgine, uint256 amount, address indexed to);
+  event Collect(address indexed from, address indexed squared, uint256 amount, address indexed to);
 
   /*//////////////////////////////////////////////////////////////
                                  ERRORS
@@ -65,7 +65,7 @@ contract LiquidityManager is Multicall, Payment, SelfPermit, IPairMintCallback {
     uint256 tokensOwed;
   }
 
-  /// @notice Owner to lendgine to position
+  /// @notice Owner to squared to position
   mapping(address => mapping(address => Position)) public positions;
 
   /*//////////////////////////////////////////////////////////////
@@ -104,10 +104,10 @@ contract LiquidityManager is Multicall, Payment, SelfPermit, IPairMintCallback {
   function pairMintCallback(uint256, bytes calldata data) external {
     PairMintCallbackData memory decoded = abi.decode(data, (PairMintCallbackData));
 
-    address lendgine = LendgineAddress.computeAddress(
+    address squared = SquaredAddress.computeAddress(
       factory, decoded.token0, decoded.token1, decoded.token0Exp, decoded.token1Exp, decoded.upperBound
     );
-    if (lendgine != msg.sender) revert ValidationError();
+    if (squared != msg.sender) revert ValidationError();
 
     if (decoded.amount0 > 0) pay(decoded.token0, decoded.payer, msg.sender, decoded.amount0);
     if (decoded.amount1 > 0) pay(decoded.token1, decoded.payer, msg.sender, decoded.amount1);
@@ -133,13 +133,13 @@ contract LiquidityManager is Multicall, Payment, SelfPermit, IPairMintCallback {
 
   /// @notice Add liquidity to a liquidity position
   function addLiquidity(AddLiquidityParams calldata params) external payable checkDeadline(params.deadline) {
-    address lendgine = LendgineAddress.computeAddress(
+    address squared = SquaredAddress.computeAddress(
       factory, params.token0, params.token1, params.token0Exp, params.token1Exp, params.upperBound
     );
 
-    uint256 r0 = ILendgine(lendgine).reserve0();
-    uint256 r1 = ILendgine(lendgine).reserve1();
-    uint256 totalLiquidity = ILendgine(lendgine).totalLiquidity();
+    uint256 r0 = ISquared(squared).reserve0();
+    uint256 r1 = ISquared(squared).reserve1();
+    uint256 totalLiquidity = ISquared(squared).totalLiquidity();
 
     uint256 amount0;
     uint256 amount1;
@@ -154,7 +154,7 @@ contract LiquidityManager is Multicall, Payment, SelfPermit, IPairMintCallback {
 
     if (amount0 < params.amount0Min || amount1 < params.amount1Min) revert AmountError();
 
-    uint256 size = ILendgine(lendgine).deposit(
+    uint256 size = ISquared(squared).deposit(
       address(this),
       params.liquidity,
       abi.encode(
@@ -172,16 +172,16 @@ contract LiquidityManager is Multicall, Payment, SelfPermit, IPairMintCallback {
     );
     if (size < params.sizeMin) revert AmountError();
 
-    Position memory position = positions[params.recipient][lendgine]; // SLOAD
+    Position memory position = positions[params.recipient][squared]; // SLOAD
 
-    (, uint256 rewardPerPositionPaid,) = ILendgine(lendgine).positions(address(this));
+    (, uint256 rewardPerPositionPaid,) = ISquared(squared).positions(address(this));
     position.tokensOwed += FullMath.mulDiv(position.size, rewardPerPositionPaid - position.rewardPerPositionPaid, 1e18);
     position.rewardPerPositionPaid = rewardPerPositionPaid;
     position.size += size;
 
-    positions[params.recipient][lendgine] = position; // SSTORE
+    positions[params.recipient][squared] = position; // SSTORE
 
-    emit AddLiquidity(msg.sender, lendgine, params.liquidity, size, amount0, amount1, params.recipient);
+    emit AddLiquidity(msg.sender, squared, params.liquidity, size, amount0, amount1, params.recipient);
   }
 
   struct RemoveLiquidityParams {
@@ -199,53 +199,53 @@ contract LiquidityManager is Multicall, Payment, SelfPermit, IPairMintCallback {
 
   /// @notice Removes from a liquidity position
   function removeLiquidity(RemoveLiquidityParams calldata params) external payable checkDeadline(params.deadline) {
-    address lendgine = LendgineAddress.computeAddress(
+    address squared = SquaredAddress.computeAddress(
       factory, params.token0, params.token1, params.token0Exp, params.token1Exp, params.upperBound
     );
 
     address recipient = params.recipient == address(0) ? address(this) : params.recipient;
 
-    (uint256 amount0, uint256 amount1, uint256 liquidity) = ILendgine(lendgine).withdraw(recipient, params.size);
+    (uint256 amount0, uint256 amount1, uint256 liquidity) = ISquared(squared).withdraw(recipient, params.size);
     if (amount0 < params.amount0Min || amount1 < params.amount1Min) revert AmountError();
 
-    Position memory position = positions[msg.sender][lendgine]; // SLOAD
+    Position memory position = positions[msg.sender][squared]; // SLOAD
 
-    (, uint256 rewardPerPositionPaid,) = ILendgine(lendgine).positions(address(this));
+    (, uint256 rewardPerPositionPaid,) = ISquared(squared).positions(address(this));
     position.tokensOwed += FullMath.mulDiv(position.size, rewardPerPositionPaid - position.rewardPerPositionPaid, 1e18);
     position.rewardPerPositionPaid = rewardPerPositionPaid;
     position.size -= params.size;
 
-    positions[msg.sender][lendgine] = position; // SSTORE
+    positions[msg.sender][squared] = position; // SSTORE
 
-    emit RemoveLiquidity(msg.sender, lendgine, liquidity, params.size, amount0, amount1, recipient);
+    emit RemoveLiquidity(msg.sender, squared, liquidity, params.size, amount0, amount1, recipient);
   }
 
   struct CollectParams {
-    address lendgine;
+    address squared;
     address recipient;
     uint256 amountRequested;
   }
 
   /// @notice Collects interest owed to the callers liqudity position
   function collect(CollectParams calldata params) external payable returns (uint256 amount) {
-    ILendgine(params.lendgine).accruePositionInterest();
+    ISquared(params.squared).accruePositionInterest();
 
     address recipient = params.recipient == address(0) ? address(this) : params.recipient;
 
-    Position memory position = positions[msg.sender][params.lendgine]; // SLOAD
+    Position memory position = positions[msg.sender][params.squared]; // SLOAD
 
-    (, uint256 rewardPerPositionPaid,) = ILendgine(params.lendgine).positions(address(this));
+    (, uint256 rewardPerPositionPaid,) = ISquared(params.squared).positions(address(this));
     position.tokensOwed += FullMath.mulDiv(position.size, rewardPerPositionPaid - position.rewardPerPositionPaid, 1e18);
     position.rewardPerPositionPaid = rewardPerPositionPaid;
 
     amount = params.amountRequested > position.tokensOwed ? position.tokensOwed : params.amountRequested;
     position.tokensOwed -= amount;
 
-    positions[msg.sender][params.lendgine] = position; // SSTORE
+    positions[msg.sender][params.squared] = position; // SSTORE
 
-    uint256 collectAmount = ILendgine(params.lendgine).collect(recipient, amount);
+    uint256 collectAmount = ISquared(params.squared).collect(recipient, amount);
     if (collectAmount != amount) revert CollectError(); // extra check for safety
 
-    emit Collect(msg.sender, params.lendgine, amount, recipient);
+    emit Collect(msg.sender, params.squared, amount, recipient);
   }
 }

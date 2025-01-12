@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.4;
 
-import { Lendgine } from "./Lendgine.sol";
+import { Squared } from "./Squared.sol";
 
 import { IFactory } from "./interfaces/IFactory.sol";
 
@@ -10,13 +10,13 @@ contract Factory is IFactory {
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
 
-  event LendgineCreated(
+  event SquaredCreated(
     address indexed token0,
     address indexed token1,
     uint256 token0Exp,
     uint256 token1Exp,
     uint256 indexed upperBound,
-    address lendgine
+    address squared
   );
 
   /*//////////////////////////////////////////////////////////////
@@ -38,7 +38,7 @@ contract Factory is IFactory {
   /// @inheritdoc IFactory
   mapping(address => mapping(address => mapping(uint256 => mapping(uint256 => mapping(uint256 => address)))))
     public
-    override getLendgine;
+    override getSquared;
 
   /*//////////////////////////////////////////////////////////////
                         TEMPORARY DEPLOY STORAGE
@@ -60,7 +60,7 @@ contract Factory is IFactory {
     //////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IFactory
-  function createLendgine(
+  function createSquared(
     address token0,
     address token1,
     uint8 token0Exp,
@@ -69,21 +69,21 @@ contract Factory is IFactory {
   )
     external
     override
-    returns (address lendgine)
+    returns (address squared)
   {
     if (token0 == token1) revert SameTokenError();
     if (token0 == address(0) || token1 == address(0)) revert ZeroAddressError();
-    if (getLendgine[token0][token1][token0Exp][token1Exp][upperBound] != address(0)) revert DeployedError();
+    if (getSquared[token0][token1][token0Exp][token1Exp][upperBound] != address(0)) revert DeployedError();
     if (token0Exp > 18 || token0Exp < 6 || token1Exp > 18 || token1Exp < 6) revert ScaleError();
 
     parameters =
       Parameters({ token0: token0, token1: token1, token0Exp: token0Exp, token1Exp: token1Exp, upperBound: upperBound });
 
-    lendgine = address(new Lendgine{ salt: keccak256(abi.encode(token0, token1, token0Exp, token1Exp, upperBound)) }());
+    squared = address(new Squared{ salt: keccak256(abi.encode(token0, token1, token0Exp, token1Exp, upperBound)) }());
 
     delete parameters;
 
-    getLendgine[token0][token1][token0Exp][token1Exp][upperBound] = lendgine;
-    emit LendgineCreated(token0, token1, token0Exp, token1Exp, upperBound, lendgine);
+    getSquared[token0][token1][token0Exp][token1Exp][upperBound] = squared;
+    emit SquaredCreated(token0, token1, token0Exp, token1Exp, upperBound, squared);
   }
 }
