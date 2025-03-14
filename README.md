@@ -1,4 +1,4 @@
-# ⚡ Dahlia
+# 🌺 Dahlia
 
 ### Leverage on any ERC-20.
 
