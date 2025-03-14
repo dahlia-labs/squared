@@ -1,14 +1,14 @@
-# ⚡ Squared
+# ⚡ Dahlia
 
 ### Leverage on any ERC-20.
 
-Smart contracts suite of Squared, an automated market maker that squares the returns of any ERC-20.
+Smart contracts suite of Dahlia, a lending market for automated market maker shares.
 
 ## Installation
 
 
 ```bash
-forge install numocash/squared
+forge install dahlia-labs/dahlia
 ```
 
 ## Local development
