@@ -1,8 +1,8 @@
-# 🌺 Dahlia
+# 🌼 Dahlia, "numoen"
 
-### Leverage on any ERC-20.
+### Oracle-free lending markets
 
-Smart contracts suite of Dahlia, a lending market for automated market maker shares.
+Smart contracts suite of Dahlia, a lending market for automated market maker shares to eliminate the oracle dependency of traditional lending markets. Thus, Dahlia enables lending and borrowing on any `ERC-20s` for leverage or yield.
 
 ## Installation
 
